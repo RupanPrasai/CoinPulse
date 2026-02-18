@@ -11,9 +11,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
       - name: Debug repo layout
         run: |
@@ -21,17 +27,12 @@ jobs:
           ls -la
           find . -maxdepth 4 -name package-lock.json -print
 
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: |
-            CoinPulse/server/package-lock.json
-            CoinPulse/client/package-lock.json
-
       # Server
       - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Build server
         working-directory: server
         run: npm run build
 
