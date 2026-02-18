@@ -13,6 +13,12 @@ jobs:
       - name: Checkout
         uses: actions/setup-node@v4
 
+      - name: Debug repo layout
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 4 -name package-lock.json -print
+
       - name: Setup node
         uses: actions/setup-node@v4
         with:
