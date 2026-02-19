@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import "dotenv/config";
+import { connectDb } from "./db.js";
 
 const app = express();
 
@@ -31,5 +33,7 @@ app.use((req, res, next) => {
 });
 
 const PORT = Number(process.env.PORT) || 3001;
+await connectDb();
 app.listen(PORT, () => console.log(`API listening on ${PORT}`));
+
 
