@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 
 type PriceSnapshotDoc = {
-  coindId: string;
+  coinId: string;
   vsCurrency: string;
   price: number;
   collectedAt: Date;
@@ -10,7 +10,7 @@ type PriceSnapshotDoc = {
 
 const priceSnapshotSchema = new Schema<PriceSnapshotDoc>(
   {
-    coindId: { type: String, required: true, index: true },
+    coinId: { type: String, required: true, index: true },
     vsCurrency: { type: String, required: true },
     price: { type: Number, required: true },
     collectedAt: { type: Date, required: true, index: true },

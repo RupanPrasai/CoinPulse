@@ -32,8 +32,15 @@ app.use((req, res, next) => {
   res.sendFile(path.join(clientDir, "index.html"));
 });
 
-const PORT = Number(process.env.PORT) || 3001;
-await connectDb();
-app.listen(PORT, () => console.log(`API listening on ${PORT}`));
+async function start() {
+  const PORT = Number(process.env.PORT) || 3001;
 
+  await connectDb();
 
+  app.listen(PORT, () => console.log(`API listening on ${PORT}`));
+}
+
+start().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
