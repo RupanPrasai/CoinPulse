@@ -5,8 +5,12 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,7 +19,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -24,16 +28,14 @@ jobs:
             server/package-lock.json
             client/package-lock.json
 
-      - name: Debug repo layout
-        run: |
-          pwd
-          ls -la
-          find . -maxdepth 4 -name package-lock.json -print
-
       # Server
       - name: Install server dependencies
         working-directory: server
         run: npm ci
+
+      - name: Test server
+        working-directory: server
+        run: npm test
 
       - name: Build server
         working-directory: server
