@@ -1,32 +1,30 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { fetchMetrics, fetchTimeseries, HttpError, type CoinMetrics, type Timeseries } from "./api/coinpulse";
 
-type MetricsResponse = {
-  coinId: string;
-  vsCurrency: string;
-  windowPoints: number;
-  latestPrice: number;
-  movingAverage: number;
-  pctChange: number;
-  volatility: number;
-  sampleCount: number;
-  computedAt: string;
-};
+function clampInt(n: number, min: number, max: number) {
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, Math.floor(n)));
+}
 
-type TimeseriesPoint = { price: number; collectedAt: string };
-
-type TimeseriesResponse = {
-  coinId: string;
-  vsCurrency: string;
-  count: number;
-  points: TimeseriesPoint[];
-};
-
-function App() {
+export default function App() {
   const [coinId, setCoinId] = useState("bitcoin");
+  const [vsCurrency, setVsCurrency] = useState("usd");
+  const [points, setPoints] = useState(12);
+  const [limit, setLimit] = useState(50);
+
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
-  const [series, setSeries] = useState<TimeseriesResponse | null>(null);
+  const [metrics, setMetrics] = useState<CoinMetrics | null>(null);
+  const [series, setSeries] = useState<Timeseries | null>(null);
+
+  const fmtPrice = useMemo(
+    () =>
+      new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: 8,
+      }),
+    []
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,44 +32,50 @@ function App() {
     setMetrics(null);
     setSeries(null);
 
-    const vsCurrency = "usd";
-    const points = 12;
-    const limit = 50;
+    const c = coinId.trim().toLowerCase();
+    const v = vsCurrency.trim().toLowerCase();
+    const p = clampInt(points, 2, 500);
+    const l = clampInt(limit, 1, 1000);
 
+    if (!c) {
+      setErr("Coin ID is required.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const [mRes, tRes] = await Promise.all([
-        fetch(
-          `/api/coins/${encodeURIComponent(
-            coinId.trim()
-          )}/metrics?vsCurrency=${vsCurrency}&points=${points}`
-        ),
-        fetch(
-          `/api/coins/${encodeURIComponent(
-            coinId.trim()
-          )}/timeseries?vsCurrency=${vsCurrency}&limit=${limit}`
-        ),
+      const [t, m] = await Promise.allSettled([
+        fetchTimeseries({ coinId: c, vsCurrency: v, limit: l }),
+        fetchMetrics({ coinId: c, vsCurrency: v, points: p }),
       ]);
 
-      if (!tRes.ok) throw new Error(`Timeseries HTTP ${tRes.status}`);
-      const tJson = (await tRes.json()) as TimeseriesResponse;
-      setSeries(tJson);
-
-      if (mRes.status === 404) {
-        setErr(
-          "Metrics not computed yet (run collector + analyzer, or wait for the next cycle)."
-        );
-        return;
+      if (t.status === "fulfilled") {
+        setSeries(t.value);
+      } else {
+        throw t.reason;
       }
-      if (!mRes.ok) throw new Error(`Metrics HTTP ${mRes.status}`);
-      const mJson = (await mRes.json()) as MetricsResponse;
-      setMetrics(mJson);
+
+      if (m.status === "fulfilled") {
+        setMetrics(m.value);
+      } else {
+        const reason = m.reason;
+        if (reason instanceof HttpError && reason.status === 404) {
+          setErr(
+            "Metrics not computed yet. Run collector + analyzer (or wait for the next scheduled collection)."
+          );
+        } else {
+          throw reason;
+        }
+      }
     } catch (e: any) {
       setErr(e?.message ?? "Request failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 820, margin: "40px auto", fontFamily: "system-ui" }}>
+    <div style={{ maxWidth: 860, margin: "40px auto", fontFamily: "system-ui" }}>
       <h1>CoinPulse</h1>
 
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
@@ -85,63 +89,101 @@ function App() {
           />
         </label>
 
-        <button type="submit" style={{ padding: 10 }}>
-          Load
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr 1fr" }}>
+          <label>
+            vsCurrency
+            <input
+              value={vsCurrency}
+              onChange={(e) => setVsCurrency(e.target.value)}
+              placeholder="usd"
+              style={{ width: "100%", padding: 10, marginTop: 6 }}
+            />
+          </label>
+
+          <label>
+            Metrics window (points)
+            <input
+              type="number"
+              value={points}
+              onChange={(e) => setPoints(Number(e.target.value))}
+              min={2}
+              max={500}
+              style={{ width: "100%", padding: 10, marginTop: 6 }}
+            />
+          </label>
+
+          <label>
+            Timeseries limit
+            <input
+              type="number"
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              min={1}
+              max={1000}
+              style={{ width: "100%", padding: 10, marginTop: 6 }}
+            />
+          </label>
+        </div>
+
+        <button type="submit" style={{ padding: 10 }} disabled={loading}>
+          {loading ? "Loading..." : "Load"}
         </button>
       </form>
 
       {err && <p style={{ marginTop: 16 }}>Error: {err}</p>}
 
       {metrics && (
-        <div style={{ marginTop: 18 }}>
+        <section style={{ marginTop: 18 }}>
           <h2 style={{ marginBottom: 8 }}>Derived Metrics</h2>
           <div style={{ padding: 12, background: "#f4f4f4" }}>
-            <div>Coin: {metrics.coinId}</div>
             <div>
-              Latest Price: {metrics.latestPrice} {metrics.vsCurrency}
+              <b>{metrics.coinId}</b> / {metrics.vsCurrency} (window={metrics.windowPoints})
             </div>
-            <div>
-              Moving Avg ({metrics.windowPoints}): {metrics.movingAverage}{" "}
-              {metrics.vsCurrency}
-            </div>
-            <div>% Change: {metrics.pctChange}%</div>
-            <div>Volatility: {metrics.volatility}</div>
+            <div>Latest: {fmtPrice.format(metrics.latestPrice)}</div>
+            <div>Moving Avg: {fmtPrice.format(metrics.movingAverage)}</div>
+            <div>% Change: {metrics.pctChange.toFixed(4)}%</div>
+            <div>Volatility: {metrics.volatility.toFixed(8)}</div>
             <div>Sample Count: {metrics.sampleCount}</div>
             <div>Computed At: {new Date(metrics.computedAt).toLocaleString()}</div>
           </div>
-        </div>
+        </section>
       )}
 
       {series && (
-        <div style={{ marginTop: 18 }}>
+        <section style={{ marginTop: 18 }}>
           <h2 style={{ marginBottom: 8 }}>Price Timeseries</h2>
           <div style={{ padding: 12, background: "#f4f4f4" }}>
             <div>
               Points: {series.count} ({series.vsCurrency})
             </div>
-            <table style={{ width: "100%", marginTop: 10, borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  <th align="left">Time</th>
-                  <th align="left">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {series.points.map((p) => (
-                  <tr key={p.collectedAt}>
-                    <td style={{ padding: "6px 0" }}>
-                      {new Date(p.collectedAt).toLocaleString()}
-                    </td>
-                    <td style={{ padding: "6px 0" }}>{p.price}</td>
+
+            {series.count === 0 ? (
+              <p style={{ marginTop: 10 }}>
+                No snapshots yet. Run the collector (and make sure Mongo is connected).
+              </p>
+            ) : (
+              <table style={{ width: "100%", marginTop: 10, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th align="left">Time</th>
+                    <th align="left">Price</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {series.points.map((p) => (
+                    <tr key={p.collectedAt}>
+                      <td style={{ padding: "6px 0" }}>
+                        {new Date(p.collectedAt).toLocaleString()}
+                      </td>
+                      <td style={{ padding: "6px 0" }}>{fmtPrice.format(p.price)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
 }
-
-export default App;
