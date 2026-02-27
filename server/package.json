@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "collect": "node dist/collector/index.js",
     "collect:dev": "tsx src/collector/index.ts",
-    "analyze:dev": "tsx src/analyzer/index.ts"
+    "analyze:dev": "tsx src/analyzer/index.ts",
+    "analyze": "node dist/analyzer/index.js"
   },
   "keywords": [],
   "author": "",
