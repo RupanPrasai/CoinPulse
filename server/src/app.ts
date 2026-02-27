@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+
 import { PriceSnapshot } from "./models/PriceSnapshot.js";
 import { CoinMetric } from "./models/CoinMetrics.js";
 import { httpRequestsTotal, httpRequestDurationSeconds, registry } from "./monitoring/metrics.js";
@@ -27,7 +28,7 @@ export function createApp() {
       const route =
         req.route && typeof req.route.path === "string"
           ? `${req.baseUrl || ""}${req.route.path}`
-          : "unmatched";
+          : req.path;
 
       const labels = {
         method: req.method,
@@ -40,6 +41,15 @@ export function createApp() {
     });
 
     next();
+  });
+
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.get("/metrics", async (_req, res) => {
+    res.setHeader("Content-Type", registry.contentType);
+    res.end(await registry.metrics());
   });
 
   app.get("/api/health", (_req, res) => {
@@ -65,8 +75,7 @@ export function createApp() {
       parsePositiveInt(process.env.ANALYZE_POINTS, 12)
     );
 
-    const doc = await CoinMetric.findOne({ coinId, vsCurrency, windowPoints })
-      .lean();
+    const doc = await CoinMetric.findOne({ coinId, vsCurrency, windowPoints }).lean();
 
     if (!doc) {
       return res.status(404).json({
@@ -97,10 +106,7 @@ export function createApp() {
         ? req.query.vsCurrency
         : process.env.COLLECT_VS_CURRENCY || "usd";
 
-    const limit = Math.min(
-      parsePositiveInt(req.query.limit, 100),
-      1000
-    );
+    const limit = Math.min(parsePositiveInt(req.query.limit, 100), 1000);
 
     const docs = await PriceSnapshot.find({ coinId, vsCurrency })
       .sort({ collectedAt: -1 })
@@ -122,7 +128,9 @@ export function createApp() {
   app.use(express.static(clientDir));
 
   app.use((req, res, next) => {
-    if (req.path.startsWith("/api") || req.path === "/health" || req.path === "/metrics") return next();
+    if (req.path.startsWith("/api") || req.path === "/health" || req.path === "/metrics") {
+      return next();
+    }
     res.sendFile(path.join(clientDir, "index.html"));
   });
 
