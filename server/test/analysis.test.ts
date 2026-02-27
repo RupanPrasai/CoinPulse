@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { movingAverage, pctChange, volatility } from "../src/services/analysis.js";
+import { movingAverage, pctChange, volatility } from "../dist/services/analysis.js";
 
 test("movingAverage computes mean", () => {
   assert.equal(movingAverage([1, 2, 3]), 2);

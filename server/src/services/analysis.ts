@@ -4,23 +4,23 @@ export function movingAverage(prices: number[]): number {
   return sum / prices.length;
 }
 
-
 export function pctChange(prices: number[]): number {
   if (prices.length < 2) return 0;
-  const first = prices[0];
-  const last = prices[prices.length - 1];
-  if (first === 0) return 0;
+
+  const first = prices.at(0);
+  const last = prices.at(-1);
+  if (first == null || last == null || first === 0) return 0;
+
   return ((last - first) / first) * 100;
 }
-
 
 export function volatility(prices: number[]): number {
   if (prices.length < 2) return 0;
 
   const returns: number[] = [];
   for (let i = 1; i < prices.length; i++) {
-    const prev = prices[i - 1];
-    const curr = prices[i];
+    const prev = prices[i - 1]!;
+    const curr = prices[i]!;
     if (prev === 0) continue;
     returns.push(curr / prev - 1);
   }

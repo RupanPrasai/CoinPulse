@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import type { Model } from "mongoose";
 
 export type CoinMetricDoc = {
   coinId: string;
@@ -33,5 +34,8 @@ const CoinMetricSchema = new mongoose.Schema<CoinMetricDoc>(
 
 CoinMetricSchema.index({ coinId: 1, vsCurrency: 1, windowPoints: 1 }, { unique: true });
 
-export const CoinMetric =
-  mongoose.models.CoinMetric || mongoose.model<CoinMetricDoc>("CoinMetric", CoinMetricSchema);
+type CoinMetricModel = Model<CoinMetricDoc>;
+
+export const CoinMetric: CoinMetricModel =
+  (mongoose.models.CoinMetric as CoinMetricModel | undefined) ??
+  mongoose.model<CoinMetricDoc>("CoinMetric", CoinMetricSchema);
