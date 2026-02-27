@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { PriceSnapshot } from "./models/PriceSnapshot.js";
 import { CoinMetric } from "./models/CoinMetrics.js";
+import { httpRequestsTotal, httpRequestDurationSeconds, registry } from "./monitoring/metrics.js";
 
 export function createApp() {
   const app = express();
@@ -16,6 +17,30 @@ export function createApp() {
 
   app.use(cors());
   app.use(express.json());
+
+  app.use((req, res, next) => {
+    const start = process.hrtime.bigint();
+
+    res.on("finish", () => {
+      const durationSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+
+      const route =
+        req.route && typeof req.route.path === "string"
+          ? `${req.baseUrl || ""}${req.route.path}`
+          : "unmatched";
+
+      const labels = {
+        method: req.method,
+        route,
+        status: String(res.statusCode),
+      };
+
+      httpRequestsTotal.inc(labels);
+      httpRequestDurationSeconds.observe(labels, durationSeconds);
+    });
+
+    next();
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
@@ -97,7 +122,7 @@ export function createApp() {
   app.use(express.static(clientDir));
 
   app.use((req, res, next) => {
-    if (req.path.startsWith("/api")) return next();
+    if (req.path.startsWith("/api") || req.path === "/health" || req.path === "/metrics") return next();
     res.sendFile(path.join(clientDir, "index.html"));
   });
 
