@@ -137,13 +137,13 @@ export default function App() {
           <h2 style={{ marginBottom: 8 }}>Derived Metrics</h2>
           <div style={{ padding: 12, background: "#f4f4f4" }}>
             <div>
-              <b>{metrics.coinId}</b> / {metrics.vsCurrency} (window={metrics.windowPoints})
+              <b>{metrics.coinId}</b> / {metrics.vsCurrency} (window={metrics.windowPoints}, used={metrics.sampleCount})
             </div>
             <div>Latest: {fmtPrice.format(metrics.latestPrice)}</div>
             <div>Moving Avg: {fmtPrice.format(metrics.movingAverage)}</div>
             <div>% Change: {metrics.pctChange.toFixed(4)}%</div>
             <div>Volatility: {metrics.volatility.toFixed(8)}</div>
-            <div>Sample Count: {metrics.sampleCount}</div>
+            <div>Used Points: {metrics.sampleCount}</div>
             <div>Computed At: {new Date(metrics.computedAt).toLocaleString()}</div>
           </div>
         </section>
