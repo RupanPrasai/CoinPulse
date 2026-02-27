@@ -1,22 +1,18 @@
-import IORedis from "ioredis";
+import Redis from "ioredis";
 
-let redis: IORedis | null = null;
+let redis: Redis | null = null;
 
-export function getRedis(): IORedis {
+export function getRedis(): Redis {
   if (redis) return redis;
 
   const url = process.env.REDIS_URL;
-  if (!url) {
-    throw new Error("REDIS_URL is not set");
-  }
+  if (!url) throw new Error("REDIS_URL is not set");
 
-  redis = new IORedis(url, {
-    // BullMQ recommends disabling ioredis request retry limits.
+  redis = new Redis(url, {
     maxRetriesPerRequest: null,
   });
 
-  redis.on("error", (err) => {
-    // Don't crash the process here; let callers decide how to handle.
+  redis.on("error", (err: unknown) => {
     console.error("[redis] error:", err);
   });
 
