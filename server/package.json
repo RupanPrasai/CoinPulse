@@ -11,7 +11,9 @@
     "collect": "node dist/collector/index.js",
     "collect:dev": "tsx src/collector/index.ts",
     "analyze:dev": "tsx src/analyzer/index.ts",
-    "analyze": "node dist/analyzer/index.js"
+    "analyze": "node dist/analyzer/index.js",
+    "analyze:once": "node dist/analyzer/runOnce.js",
+    "analyze:once:dev": "tsx src/analyzer/runOnce.ts"
   },
   "keywords": [],
   "author": "",
