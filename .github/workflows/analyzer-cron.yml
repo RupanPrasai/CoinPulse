@@ -3,6 +3,7 @@ name: analyzer-cron
 on:
   workflow_dispatch:
   schedule:
+    - cron: "10 */4 * * *"
     - cron: "*/5 * * * *"
 
 jobs:
