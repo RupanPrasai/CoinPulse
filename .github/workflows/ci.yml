@@ -32,5 +32,11 @@ jobs:
       - name: Build (server+client, copies client/dist -> server/public)
         run: npm run build
 
+      - name: Cache mongodb-memory-server binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: ${{ runner.os }}-mongodb-binaries
+
       - name: Test server
         run: npm test --prefix server
