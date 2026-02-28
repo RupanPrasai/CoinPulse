@@ -3,7 +3,7 @@ name: collector-cron
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "*/10 * * * *"
 
 jobs:
   collect:
