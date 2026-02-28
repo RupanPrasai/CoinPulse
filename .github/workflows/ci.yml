@@ -12,6 +12,7 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -28,24 +29,8 @@ jobs:
             server/package-lock.json
             client/package-lock.json
 
-      # Server
-      - name: Install server dependencies
-        working-directory: server
-        run: npm ci
+      - name: Build (server+client, copies client/dist -> server/public)
+        run: npm run build
 
       - name: Test server
-        working-directory: server
-        run: npm test
-
-      - name: Build server
-        working-directory: server
-        run: npm run build
-
-      # Client
-      - name: Install client dependencies
-        working-directory: client
-        run: npm ci
-
-      - name: Build client
-        working-directory: client
-        run: npm run build
+        run: npm test --prefix server
