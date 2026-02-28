@@ -66,7 +66,7 @@ npm install
 npm run dev
 ```
 
-API runs on `http://localhost:8080` (or whichever port your app prints)
+API runs on `http://localhost:3001` (or whichever port your app prints)
 
 ### 3) Start the analyzer worker
 ```bash
@@ -110,10 +110,10 @@ Prometheus-format metrics (request counts, latency histogram).
 - **2.** Run collector a few times (Terminal D) with pauses (e.g., every 1–2 minutes) to build history.
 - **3.** Verify endpoints:
 ```bash
-curl -s http://localhost:8080/health
-curl -s "http://localhost:8080/api/coins/bitcoin/timeseries?vsCurrency=usd&limit=5" | head
-curl -s "http://localhost:8080/api/coins/bitcoin/metrics?vsCurrency=usd&points=12" | head
-curl -s http://localhost:8080/metrics | head
+curl -s http://localhost:3001/health
+curl -s "http://localhost:3001/api/coins/bitcoin/timeseries?vsCurrency=usd&limit=5" | head
+curl -s "http://localhost:3001/api/coins/bitcoin/metrics?vsCurrency=usd&points=12" | head
+curl -s http://localhost:3001/metrics | head
 ```
 If the coin metrics endpoint returns “Metrics not found”, it usually means:
 - analyzer hasn’t run yet, or
