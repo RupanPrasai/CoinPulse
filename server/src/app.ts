@@ -19,6 +19,10 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
+  app.get("/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
   app.use((req, res, next) => {
     const start = process.hrtime.bigint();
 
@@ -28,7 +32,9 @@ export function createApp() {
       const route =
         req.route && typeof req.route.path === "string"
           ? `${req.baseUrl || ""}${req.route.path}`
-          : req.path;
+          : req.path.startsWith("/assets") || req.path === "/favicon.ico" || req.path === "/vite.svg"
+            ? "/static"
+            : "/spa";
 
       const labels = {
         method: req.method,
@@ -41,10 +47,6 @@ export function createApp() {
     });
 
     next();
-  });
-
-  app.get("/health", (_req, res) => {
-    res.json({ ok: true });
   });
 
   app.get("/metrics", async (_req, res) => {
