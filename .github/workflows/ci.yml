@@ -25,27 +25,30 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             server/package-lock.json
             client/package-lock.json
 
-      # Server
-      - name: Install server dependencies
-        working-directory: server
-        run: npm ci
+      - name: Install root dependencies (if present)
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            echo "No root package-lock.json found; skipping root npm ci"
+          fi
+
+      - name: Build (root if present; otherwise build server+client)
+        run: |
+          if [ -f package.json ] && node -e "p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            npm run build
+          else
+            echo "No root build script found; falling back to per-project builds"
+            npm ci --prefix server
+            npm test --prefix server
+            npm run build --prefix server
+            npm ci --prefix client
+            npm run build --prefix client
+          fi
 
       - name: Test server
-        working-directory: server
-        run: npm test
-
-      - name: Build server
-        working-directory: server
-        run: npm run build
-
-      # Client
-      - name: Install client dependencies
-        working-directory: client
-        run: npm ci
-
-      - name: Build client
-        working-directory: client
-        run: npm run build
+        run: npm test --prefix server
