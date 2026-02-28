@@ -139,11 +139,12 @@ npm run build
 
 ### Production deployment
 In production you should run these as separate services/processes:
-- **Web/API**: `node dist/index.js` (or your compiled server entry)
-- **Analyzer worker**: `node dist/analyzer/index.js`
-- **Collector**: scheduled execution of `node dist/collector/index.js` every 5–10 minutes
-- **Redis**: managed Redis service
-- **MongoDB**: Atlas
+
+- **Web/API (Render Web Service)**: runs `node dist/index.js` and serves the built client from `server/public`
+- **Analyzer (GitHub Actions schedule)**: runs `node dist/analyzer/runOnce.js` every 4 hours, offset (`10 */4 * * *`)
+- **Collector (GitHub Actions schedule)**: runs `node dist/collector/index.js` every 4 hours (`0 */4 * * *`)
+- **Redis**: managed Redis (`REDIS_URL`)
+- **MongoDB**: Atlas (`MONGO_URI`)
 
 ### CI
 GitHub Actions workflow runs:
@@ -155,7 +156,7 @@ See `.github/workflows/ci.yml`
 - **Analyzer fails with** `REDIS_URL is not set`
 - Add `REDIS_URL=redis://localhost:6379` to `server/.env`
 - **CoinGecko returns 429**
-- You’re calling the collector too frequently. Slow down; schedule every 5–10 minutes.
+- You’re calling the collector too frequently. Slow down and add delay between runs. In production, the collector is scheduled every 4 hours.
 - `/api/coins/:coinId/metrics` **returns “Metrics not found”**
 - Ensure the analyzer is running and you requested `points` matching `ANALYZE_POINTS`.
 
