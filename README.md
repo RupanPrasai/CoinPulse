@@ -130,6 +130,7 @@ Includes:
 - unit tests for analysis logic (pure functions)
 - unit tests mocking CoinGecko fetch
 - HTTP-level tests for monitoring and echo endpoints
+- DB-backed integration tests using mongodb-memory-server for `/metrics` and `/timeseries` endpoints
 
 **Client build**
 ```bash
